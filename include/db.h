@@ -38,7 +38,7 @@ extern "C" {
 /* Constants */
 #define DB_PAGE_SIZE      512
 #define DB_PAGE_DATA_SIZE 506
-#define DB_SIGNATURE      "RETRODB\0"
+#define DB_SIGNATURE      "VDB\0"
 #define DB_VERSION        1
 #define DB_MAX_INDEXES    15
 #define DB_MAX_FREE_PAGES 127
@@ -67,7 +67,7 @@ typedef struct {
 
 /* Database header - 512 bytes (page 0) */
 typedef struct {
-    char        signature[8];
+    char        signature[4];
     uint16      version;
     uint16      page_size;
     uint16      record_size;
@@ -76,7 +76,7 @@ typedef struct {
     int32       last_compacted;
     bool        journal_pending;
     byte        index_count;
-    byte        reserved[4];
+    byte        reserved[8];
     DBIndexInfo indexes[DB_MAX_INDEXES];
 } DBHeader;
 

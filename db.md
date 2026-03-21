@@ -47,7 +47,7 @@ The database header spans the first two pages of the `.DAT` file. Page 0 contain
 **Header (32 bytes):**
 | Name            | Type                          | Notes                                      |
 | --------------- | ----------------------------- | ------------------------------------------ |
-| signature       | char[8]                       | "RETRODB" + '\0' for file type validation  |
+| signature       | char[4]                       | "VDB" + '\0' for file type validation      |
 | version         | uint16                        | Format version (currently 1)               |
 | page_size       | uint16                        | Size of each page in bytes (always 512)    |
 | record_size     | uint16                        | Size of each record in bytes (1-130050)    |
@@ -56,7 +56,7 @@ The database header spans the first two pages of the `.DAT` file. Page 0 contain
 | last_compacted  | int32                         | Timestamp of last compaction operation     |
 | journal_pending | bool                          | true if journal needs replay on open       |
 | index_count     | byte                          | Number of secondary indexes (0-15)         |
-| reserved        | byte[4]                       | Padding to 32 bytes                        |
+| reserved        | byte[8]                       | Padding to 32 bytes                        |
 
 **Index List (480 bytes):**
 | Name            | Type                          | Notes                                      |
@@ -88,7 +88,7 @@ The database header spans the first two pages of the `.DAT` file. Page 0 contain
 - **0 (IT_ID)**: Index on an int32 field
 - **1 (IT_STRING)**: Index on a char[64] field
 
-**signature**: Used to verify file format. Always "RETRODB" followed by null terminator.
+**signature**: Used to verify file format. Always "VDB" followed by null terminator.
 
 **version**: Format version number. Current version is 1. Future incompatible changes increment this.
 
@@ -109,7 +109,7 @@ The database header spans the first two pages of the `.DAT` file. Page 0 contain
 
 **index_count**: Number of active secondary indexes (0-15). Maximum 15 indexes supported.
 
-**reserved**: 4 bytes of padding to bring header to exactly 32 bytes.
+**reserved**: 8 bytes of padding to bring header to exactly 32 bytes.
 
 **free_page_count** (in DBFreeList, page 1): Total count of all free pages in the database (maximum 65535). This counter is incremented when a page is deleted and decremented when a page is allocated. If this value is 0, allocate a new page at end of file. If this value is > 0 but `free_page_list_len = 0`, call `UpdateFreePages` to repopulate the `free_pages` array.
 
@@ -541,7 +541,7 @@ typedef struct {
 
 /* Database header - 512 bytes (page 0) */
 typedef struct {
-    char        signature[8];  /* "RETRODB" + '\0' */
+    char        signature[4];  /* "VDB" + '\0' */
     uint16      version;       /* Format version (1) */
     uint16      page_size;     /* Size of each page (always 512) */
     uint16      record_size;   /* Size of each record in bytes */
@@ -550,7 +550,7 @@ typedef struct {
     int32       last_compacted;/* Timestamp of last compaction */
     bool        journal_pending;/* true if journal needs replay */
     byte        index_count;   /* Number of secondary indexes (0-15) */
-    byte        reserved[4];   /* Padding to 32 bytes */
+    byte        reserved[8];   /* Padding to 32 bytes */
     DBIndexInfo indexes[DB_MAX_INDEXES]; /* Secondary index definitions */
 } DBHeader;
 

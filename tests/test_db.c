@@ -63,7 +63,7 @@ int test_db_header_roundtrip(void) {
     ASSERT_TRUE(CreateDatabase(DB_TEST_NAME, 256));
     ASSERT_TRUE(OpenDatabase(DB_TEST_NAME, &db));
 
-    ASSERT_TRUE(memcmp(db.header.signature, "RETRODB\0", 8) == 0);
+    ASSERT_TRUE(memcmp(db.header.signature, "VDB\0", 4) == 0);
     ASSERT_EQ(1, db.header.version);
     ASSERT_EQ(512, db.header.page_size);
     ASSERT_EQ(256, db.header.record_size);

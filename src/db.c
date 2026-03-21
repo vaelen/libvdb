@@ -74,7 +74,7 @@ bool ReadHeader(Database *db) {
     if (fread(page, 1, DB_PAGE_SIZE, db->data_file) != DB_PAGE_SIZE)
         return false;
 
-    memcpy(db->header.signature, page, 8);
+    memcpy(db->header.signature, page, 4);
     db->header.version = GET_LE16(page + 8);
     db->header.page_size = GET_LE16(page + 10);
     db->header.record_size = GET_LE16(page + 12);
@@ -83,7 +83,7 @@ bool ReadHeader(Database *db) {
     db->header.last_compacted = (int32)GET_LE32(page + 22);
     db->header.journal_pending = page[26];
     db->header.index_count = page[27];
-    memcpy(db->header.reserved, page + 28, 4);
+    memcpy(db->header.reserved, page + 28, 8);
 
     /* Read index info array */
     for (i = 0; i < DB_MAX_INDEXES; i++) {
@@ -94,7 +94,7 @@ bool ReadHeader(Database *db) {
     }
 
     /* Validate signature */
-    if (memcmp(db->header.signature, DB_SIGNATURE, 8) != 0)
+    if (memcmp(db->header.signature, DB_SIGNATURE, 4) != 0)
         return false;
     if (db->header.version != DB_VERSION)
         return false;
@@ -111,7 +111,7 @@ bool WriteHeader(Database *db) {
 
     memset(page, 0, DB_PAGE_SIZE);
 
-    memcpy(page, db->header.signature, 8);
+    memcpy(page, db->header.signature, 4);
     PUT_LE16(page + 8, db->header.version);
     PUT_LE16(page + 10, db->header.page_size);
     PUT_LE16(page + 12, db->header.record_size);
@@ -120,7 +120,7 @@ bool WriteHeader(Database *db) {
     PUT_LE32(page + 22, db->header.last_compacted);
     page[26] = db->header.journal_pending;
     page[27] = db->header.index_count;
-    memcpy(page + 28, db->header.reserved, 4);
+    memcpy(page + 28, db->header.reserved, 8);
 
     for (i = 0; i < DB_MAX_INDEXES; i++) {
         int off = 32 + i * 32;
@@ -620,7 +620,7 @@ bool CreateDatabase(const char *name, uint16 record_size) {
 
     /* Write header page */
     memset(page, 0, DB_PAGE_SIZE);
-    memcpy(page, DB_SIGNATURE, 8);
+    memcpy(page, DB_SIGNATURE, 4);
     PUT_LE16(page + 8, DB_VERSION);
     PUT_LE16(page + 10, DB_PAGE_SIZE);
     PUT_LE16(page + 12, record_size);
@@ -1156,7 +1156,7 @@ bool ValidateDatabase(Database *db) {
     if (!db->is_open)
         return false;
 
-    if (memcmp(db->header.signature, DB_SIGNATURE, 8) != 0)
+    if (memcmp(db->header.signature, DB_SIGNATURE, 4) != 0)
         valid = false;
 
     if (db->header.version != DB_VERSION)
