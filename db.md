@@ -21,11 +21,7 @@ It's main features include:
 
 VDB data files are binary files organized into fixed-size 512-byte pages. This page-based architecture allows for both random access of specific records and easy reuse of freed space when records are removed. The 512-byte page size matches the BTree module's page size and is optimal for retro system disk I/O.
 
-**Note: Data files are not guaranteed to be readable by a VDB instance running on a different operating system than the one that originally created the data file. This is especially true when moving between 16, 32, and 64 bit systems. Cross-platform compatibility issues include:**
-- **Endianness**: Big-endian vs little-endian byte order
-- **Record alignment**: Different compilers may pad records differently
-
-**Recommendation**: Always use explicit byte-by-byte serialization (like the BTree module does) rather than direct record writes for true cross-platform compatibility.
+**Note: All multi-byte values are stored in little-endian byte order.** The library handles endian conversion automatically via macros in `internal.h`, so database files are portable across big-endian and little-endian systems. All on-disk structures use explicit byte-by-byte serialization to avoid compiler alignment and padding differences.
 
 ### Files
 
