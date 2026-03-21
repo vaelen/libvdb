@@ -27,17 +27,9 @@
 
 #include <stdio.h>
 
-#ifndef VDB_H
-#include "vdb.h"
-#endif
-
-#ifndef BTREE_H
+#include "vdbtypes.h"
 #include "btree.h"
-#endif
-
-#ifndef HASH_H
 #include "hash.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,7 +74,7 @@ typedef struct {
     int32       record_count;
     int32       next_record_id;
     int32       last_compacted;
-    byte        journal_pending;
+    bool        journal_pending;
     byte        index_count;
     byte        reserved[4];
     DBIndexInfo indexes[DB_MAX_INDEXES];
@@ -120,64 +112,64 @@ typedef struct {
     FILE      *data_file;
     FILE      *journal_file;
     BTree     *primary_index;
-    int        is_open;
+    bool       is_open;
 } Database;
 
 /* Low-level file operations */
-int  ReadPage(Database *db, int32 page_num, DBPage *page);
-int  WritePage(Database *db, int32 page_num, const DBPage *page);
-int  ReadHeader(Database *db);
-int  WriteHeader(Database *db);
-int  ReadFreeList(Database *db);
-int  WriteFreeList(Database *db);
+bool  ReadPage(Database *db, int32 page_num, DBPage *page);
+bool  WritePage(Database *db, int32 page_num, const DBPage *page);
+bool  ReadHeader(Database *db);
+bool  WriteHeader(Database *db);
+bool  ReadFreeList(Database *db);
+bool  WriteFreeList(Database *db);
 int16 CalculatePagesNeeded(uint16 record_size);
-int  ReadRecord(Database *db, int32 first_page, byte *data);
-int  WriteRecord(Database *db, int32 first_page, int32 record_id, const byte *data);
+bool  ReadRecord(Database *db, int32 first_page, byte *data);
+bool  WriteRecord(Database *db, int32 first_page, int32 record_id, const byte *data);
 
 /* Free space management */
-int  FindConsecutiveFreePages(Database *db, int16 count, int32 *first_page);
-int  AllocatePages(Database *db, int16 count, int32 *first_page);
-int  FreePages(Database *db, int32 first_page, int16 count);
-int  UpdateFreePages(Database *db);
+bool FindConsecutiveFreePages(Database *db, int16 count, int32 *first_page);
+bool AllocatePages(Database *db, int16 count, int32 *first_page);
+bool FreePages(Database *db, int32 first_page, int16 count);
+bool UpdateFreePages(Database *db);
 
 /* Index management */
-void GetIndexFileName(const char *base_name, int16 index_num, char *out, int16 out_size);
-int  OpenIndexFile(BTree *tree, const char *base_name, int16 index_num);
-int  CreateIndexFile(const char *base_name, int16 index_num);
+void  GetIndexFileName(const char *base_name, int16 index_num, char *out, int16 out_size);
+bool  OpenIndexFile(BTree *tree, const char *base_name, int16 index_num);
+bool  CreateIndexFile(const char *base_name, int16 index_num);
 int32 GenerateIndexKey(byte index_type, const byte *value);
-int  InsertIntoIndex(BTree *tree, int32 key, int32 value);
-int  DeleteFromIndex(BTree *tree, int32 key, int32 value);
-int  FindInIndex(BTree *tree, int32 key, int32 *values, int16 max_values, int16 *count);
+bool  InsertIntoIndex(BTree *tree, int32 key, int32 value);
+bool  DeleteFromIndex(BTree *tree, int32 key, int32 value);
+bool  FindInIndex(BTree *tree, int32 key, int32 *values, int16 max_values, int16 *count);
 
 /* Journal/transaction system */
 uint16 CalculateJournalChecksum(const DBJournalEntry *entry);
-int  WriteJournalEntry(Database *db, const DBJournalEntry *entry);
-int  ReadJournalEntry(Database *db, int16 entry_num, DBJournalEntry *entry);
-int  BeginTransaction(Database *db);
-int  CommitTransaction(Database *db);
-int  RollbackTransaction(Database *db);
-int  ReplayJournal(Database *db);
+bool   WriteJournalEntry(Database *db, const DBJournalEntry *entry);
+bool   ReadJournalEntry(Database *db, int16 entry_num, DBJournalEntry *entry);
+bool   BeginTransaction(Database *db);
+bool   CommitTransaction(Database *db);
+bool   RollbackTransaction(Database *db);
+bool   ReplayJournal(Database *db);
 
 /* Database operations */
-int  CreateDatabase(const char *name, uint16 record_size);
-int  OpenDatabase(const char *name, Database *db);
+bool CreateDatabase(const char *name, uint16 record_size);
+bool OpenDatabase(const char *name, Database *db);
 void CloseDatabase(Database *db);
 
 /* Record operations */
-int  AddRecord(Database *db, const byte *data, int32 *record_id);
-int  FindRecordByID(Database *db, int32 id, byte *data);
-int  FindRecordByString(Database *db, const char *field_name, const char *value, byte *data, int32 *record_id);
-int  UpdateRecord(Database *db, int32 id, const byte *data);
-int  DeleteRecord(Database *db, int32 id);
+bool AddRecord(Database *db, const byte *data, int32 *record_id);
+bool FindRecordByID(Database *db, int32 id, byte *data);
+bool FindRecordByString(Database *db, const char *field_name, const char *value, byte *data, int32 *record_id);
+bool UpdateRecord(Database *db, int32 id, const byte *data);
+bool DeleteRecord(Database *db, int32 id);
 
 /* Index maintenance */
-int  AddIndex(Database *db, const char *field_name, byte index_type);
-int  RebuildIndex(Database *db, int16 index_number);
-int  RebuildAllIndexes(Database *db);
+bool AddIndex(Database *db, const char *field_name, byte index_type);
+bool RebuildIndex(Database *db, int16 index_number);
+bool RebuildAllIndexes(Database *db);
 
 /* Maintenance */
-int  CompactDatabase(Database *db);
-int  ValidateDatabase(Database *db);
+bool CompactDatabase(Database *db);
+bool ValidateDatabase(Database *db);
 
 #ifdef __cplusplus
 }

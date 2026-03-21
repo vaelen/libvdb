@@ -25,29 +25,29 @@ static long getFileSize(FILE *fp) {
 
 /* Low-level page I/O */
 
-int ReadPage(Database *db, int32 page_num, DBPage *page) {
+bool ReadPage(Database *db, int32 page_num, DBPage *page) {
     byte buf[DB_PAGE_SIZE];
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     fseek(db->data_file, (long)page_num * DB_PAGE_SIZE, SEEK_SET);
     if (fread(buf, 1, DB_PAGE_SIZE, db->data_file) != DB_PAGE_SIZE)
-        return 0;
+        return false;
 
     page->id = (int32)GET_LE32(buf);
     page->status = buf[4];
     page->reserved = buf[5];
     memcpy(page->data, buf + 6, DB_PAGE_DATA_SIZE);
 
-    return 1;
+    return true;
 }
 
-int WritePage(Database *db, int32 page_num, const DBPage *page) {
+bool WritePage(Database *db, int32 page_num, const DBPage *page) {
     byte buf[DB_PAGE_SIZE];
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     memset(buf, 0, DB_PAGE_SIZE);
     PUT_LE32(buf, page->id);
@@ -57,22 +57,22 @@ int WritePage(Database *db, int32 page_num, const DBPage *page) {
 
     fseek(db->data_file, (long)page_num * DB_PAGE_SIZE, SEEK_SET);
     if (fwrite(buf, 1, DB_PAGE_SIZE, db->data_file) != DB_PAGE_SIZE)
-        return 0;
+        return false;
     fflush(db->data_file);
 
-    return 1;
+    return true;
 }
 
-int ReadHeader(Database *db) {
+bool ReadHeader(Database *db) {
     byte page[DB_PAGE_SIZE];
     int i;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     fseek(db->data_file, 0L, SEEK_SET);
     if (fread(page, 1, DB_PAGE_SIZE, db->data_file) != DB_PAGE_SIZE)
-        return 0;
+        return false;
 
     memcpy(db->header.signature, page, 8);
     db->header.version = GET_LE16(page + 8);
@@ -95,19 +95,19 @@ int ReadHeader(Database *db) {
 
     /* Validate signature */
     if (memcmp(db->header.signature, DB_SIGNATURE, 8) != 0)
-        return 0;
+        return false;
     if (db->header.version != DB_VERSION)
-        return 0;
+        return false;
 
-    return 1;
+    return true;
 }
 
-int WriteHeader(Database *db) {
+bool WriteHeader(Database *db) {
     byte page[DB_PAGE_SIZE];
     int i;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     memset(page, 0, DB_PAGE_SIZE);
 
@@ -131,22 +131,22 @@ int WriteHeader(Database *db) {
 
     fseek(db->data_file, 0L, SEEK_SET);
     if (fwrite(page, 1, DB_PAGE_SIZE, db->data_file) != DB_PAGE_SIZE)
-        return 0;
+        return false;
     fflush(db->data_file);
 
-    return 1;
+    return true;
 }
 
-int ReadFreeList(Database *db) {
+bool ReadFreeList(Database *db) {
     byte page[DB_PAGE_SIZE];
     int i;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     fseek(db->data_file, (long)DB_PAGE_SIZE, SEEK_SET);
     if (fread(page, 1, DB_PAGE_SIZE, db->data_file) != DB_PAGE_SIZE)
-        return 0;
+        return false;
 
     db->free_list.free_page_count = GET_LE16(page);
     db->free_list.free_page_list_len = GET_LE16(page + 2);
@@ -154,15 +154,15 @@ int ReadFreeList(Database *db) {
     for (i = 0; i < DB_MAX_FREE_PAGES; i++)
         db->free_list.free_pages[i] = (int32)GET_LE32(page + 4 + i * 4);
 
-    return 1;
+    return true;
 }
 
-int WriteFreeList(Database *db) {
+bool WriteFreeList(Database *db) {
     byte page[DB_PAGE_SIZE];
     int i;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     memset(page, 0, DB_PAGE_SIZE);
     PUT_LE16(page, db->free_list.free_page_count);
@@ -173,34 +173,34 @@ int WriteFreeList(Database *db) {
 
     fseek(db->data_file, (long)DB_PAGE_SIZE, SEEK_SET);
     if (fwrite(page, 1, DB_PAGE_SIZE, db->data_file) != DB_PAGE_SIZE)
-        return 0;
+        return false;
     fflush(db->data_file);
 
-    return 1;
+    return true;
 }
 
 int16 CalculatePagesNeeded(uint16 record_size) {
     return (int16)((record_size + DB_PAGE_DATA_SIZE - 1) / DB_PAGE_DATA_SIZE);
 }
 
-int ReadRecord(Database *db, int32 first_page, byte *data) {
+bool ReadRecord(Database *db, int32 first_page, byte *data) {
     DBPage page;
     int16 pages_needed, i, bytes_to_copy;
     int offset;
     int32 record_id;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     pages_needed = CalculatePagesNeeded(db->header.record_size);
 
     if (!ReadPage(db, first_page, &page))
-        return 0;
+        return false;
 
     record_id = page.id;
 
     if (page.status != PS_ACTIVE)
-        return 0;
+        return false;
 
     bytes_to_copy = db->header.record_size <= DB_PAGE_DATA_SIZE
                   ? (int16)db->header.record_size
@@ -210,11 +210,11 @@ int ReadRecord(Database *db, int32 first_page, byte *data) {
 
     for (i = 1; i < pages_needed; i++) {
         if (!ReadPage(db, first_page + i, &page))
-            return 0;
+            return false;
         if (page.id != record_id)
-            return 0;
+            return false;
         if (page.status != PS_CONTINUATION)
-            return 0;
+            return false;
 
         bytes_to_copy = (int16)(db->header.record_size - offset);
         if (bytes_to_copy > DB_PAGE_DATA_SIZE)
@@ -224,16 +224,16 @@ int ReadRecord(Database *db, int32 first_page, byte *data) {
         offset += bytes_to_copy;
     }
 
-    return 1;
+    return true;
 }
 
-int WriteRecord(Database *db, int32 first_page, int32 record_id, const byte *data) {
+bool WriteRecord(Database *db, int32 first_page, int32 record_id, const byte *data) {
     DBPage page;
     int16 pages_needed, i, bytes_to_copy;
     int offset;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     pages_needed = CalculatePagesNeeded(db->header.record_size);
     offset = 0;
@@ -250,30 +250,30 @@ int WriteRecord(Database *db, int32 first_page, int32 record_id, const byte *dat
         memcpy(page.data, data + offset, bytes_to_copy);
 
         if (!WritePage(db, first_page + i, &page))
-            return 0;
+            return false;
 
         offset += bytes_to_copy;
     }
 
-    return 1;
+    return true;
 }
 
 /* Free space management */
 
-int FindConsecutiveFreePages(Database *db, int16 count, int32 *first_page) {
+bool FindConsecutiveFreePages(Database *db, int16 count, int32 *first_page) {
     int i, j;
     int16 consecutive;
     int32 start_page;
 
     if (count <= 0)
-        return 0;
+        return false;
 
     if (count == 1) {
         if (db->free_list.free_page_list_len > 0) {
             *first_page = db->free_list.free_pages[0];
-            return 1;
+            return true;
         }
-        return 0;
+        return false;
     }
 
     for (i = 0; i < (int)db->free_list.free_page_list_len; i++) {
@@ -285,7 +285,7 @@ int FindConsecutiveFreePages(Database *db, int16 count, int32 *first_page) {
                 consecutive++;
                 if (consecutive == count) {
                     *first_page = start_page;
-                    return 1;
+                    return true;
                 }
             } else {
                 break;
@@ -293,15 +293,15 @@ int FindConsecutiveFreePages(Database *db, int16 count, int32 *first_page) {
         }
     }
 
-    return 0;
+    return false;
 }
 
-int AllocatePages(Database *db, int16 count, int32 *first_page) {
+bool AllocatePages(Database *db, int16 count, int32 *first_page) {
     long file_size_pages;
     int i, j;
 
     if (count <= 0)
-        return 0;
+        return false;
 
     /* Try free list first */
     if (db->free_list.free_page_count >= (uint16)count && db->free_list.free_page_list_len > 0) {
@@ -313,7 +313,7 @@ int AllocatePages(Database *db, int16 count, int32 *first_page) {
                     db->free_list.free_page_list_len -= (uint16)count;
                     db->free_list.free_page_count -= (uint16)count;
                     WriteFreeList(db);
-                    return 1;
+                    return true;
                 }
             }
         }
@@ -330,7 +330,7 @@ int AllocatePages(Database *db, int16 count, int32 *first_page) {
                         db->free_list.free_page_list_len -= (uint16)count;
                         db->free_list.free_page_count -= (uint16)count;
                         WriteFreeList(db);
-                        return 1;
+                        return true;
                     }
                 }
             }
@@ -340,21 +340,21 @@ int AllocatePages(Database *db, int16 count, int32 *first_page) {
     /* Append to end of file */
     file_size_pages = getFileSize(db->data_file) / DB_PAGE_SIZE;
     *first_page = (int32)file_size_pages;
-    return 1;
+    return true;
 }
 
-int FreePages(Database *db, int32 first_page, int16 count) {
+bool FreePages(Database *db, int32 first_page, int16 count) {
     DBPage page;
     int i;
 
     if (count <= 0)
-        return 0;
+        return false;
 
     for (i = 0; i < count; i++) {
         if (ReadPage(db, first_page + i, &page)) {
             page.status = PS_EMPTY;
             if (!WritePage(db, first_page + i, &page))
-                return 0;
+                return false;
         }
     }
 
@@ -368,14 +368,14 @@ int FreePages(Database *db, int32 first_page, int16 count) {
     return WriteFreeList(db);
 }
 
-int UpdateFreePages(Database *db) {
+bool UpdateFreePages(Database *db) {
     DBPage page;
     int32 page_num;
     long file_size_pages;
     uint16 free_count;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     file_size_pages = getFileSize(db->data_file) / DB_PAGE_SIZE;
     free_count = 0;
@@ -428,19 +428,19 @@ void GetIndexFileName(const char *base_name, int16 index_num, char *out, int16 o
     }
 }
 
-int OpenIndexFile(BTree *tree, const char *base_name, int16 index_num) {
+bool OpenIndexFile(BTree *tree, const char *base_name, int16 index_num) {
     char filename[320];
     GetIndexFileName(base_name, index_num, filename, sizeof(filename));
     if (filename[0] == '\0')
-        return 0;
+        return false;
     return OpenBTree(tree, filename);
 }
 
-int CreateIndexFile(const char *base_name, int16 index_num) {
+bool CreateIndexFile(const char *base_name, int16 index_num) {
     char filename[320];
     GetIndexFileName(base_name, index_num, filename, sizeof(filename));
     if (filename[0] == '\0')
-        return 0;
+        return false;
     return CreateBTree(filename);
 }
 
@@ -458,15 +458,15 @@ int32 GenerateIndexKey(byte index_type, const byte *value) {
     }
 }
 
-int InsertIntoIndex(BTree *tree, int32 key, int32 value) {
+bool InsertIntoIndex(BTree *tree, int32 key, int32 value) {
     return BTreeInsert(tree, key, value);
 }
 
-int DeleteFromIndex(BTree *tree, int32 key, int32 value) {
+bool DeleteFromIndex(BTree *tree, int32 key, int32 value) {
     return BTreeDeleteValue(tree, key, value);
 }
 
-int FindInIndex(BTree *tree, int32 key, int32 *values, int16 max_values, int16 *count) {
+bool FindInIndex(BTree *tree, int32 key, int32 *values, int16 max_values, int16 *count) {
     return BTreeFind(tree, key, values, max_values, count);
 }
 
@@ -481,12 +481,12 @@ uint16 CalculateJournalChecksum(const DBJournalEntry *entry) {
     return CRC16(buffer, 516);
 }
 
-int WriteJournalEntry(Database *db, const DBJournalEntry *entry) {
+bool WriteJournalEntry(Database *db, const DBJournalEntry *entry) {
     byte buf[JOURNAL_ENTRY_SIZE];
     uint16 checksum;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     checksum = CalculateJournalChecksum(entry);
 
@@ -499,21 +499,21 @@ int WriteJournalEntry(Database *db, const DBJournalEntry *entry) {
 
     fseek(db->journal_file, 0L, SEEK_END);
     if (fwrite(buf, 1, JOURNAL_ENTRY_SIZE, db->journal_file) != JOURNAL_ENTRY_SIZE)
-        return 0;
+        return false;
     fflush(db->journal_file);
 
-    return 1;
+    return true;
 }
 
-int ReadJournalEntry(Database *db, int16 entry_num, DBJournalEntry *entry) {
+bool ReadJournalEntry(Database *db, int16 entry_num, DBJournalEntry *entry) {
     byte buf[JOURNAL_ENTRY_SIZE];
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     fseek(db->journal_file, (long)entry_num * JOURNAL_ENTRY_SIZE, SEEK_SET);
     if (fread(buf, 1, JOURNAL_ENTRY_SIZE, db->journal_file) != JOURNAL_ENTRY_SIZE)
-        return 0;
+        return false;
 
     entry->operation = buf[0];
     entry->page_num = (int32)GET_LE32(buf + 1);
@@ -521,40 +521,40 @@ int ReadJournalEntry(Database *db, int16 entry_num, DBJournalEntry *entry) {
     memcpy(entry->data, buf + 9, 507);
     entry->checksum = GET_LE16(buf + 516);
 
-    return 1;
+    return true;
 }
 
-int BeginTransaction(Database *db) {
+bool BeginTransaction(Database *db) {
     if (!db->is_open)
-        return 0;
-    db->header.journal_pending = 1;
+        return false;
+    db->header.journal_pending = true;
     return WriteHeader(db);
 }
 
-int CommitTransaction(Database *db) {
+bool CommitTransaction(Database *db) {
     if (!db->is_open)
-        return 0;
+        return false;
 
-    db->header.journal_pending = 0;
+    db->header.journal_pending = false;
     if (!WriteHeader(db))
-        return 0;
+        return false;
 
     /* Truncate journal file */
     return ftruncate_(db->journal_file, 0L);
 }
 
-int RollbackTransaction(Database *db) {
+bool RollbackTransaction(Database *db) {
     if (!db->is_open)
-        return 0;
+        return false;
 
-    db->header.journal_pending = 0;
+    db->header.journal_pending = false;
     if (!WriteHeader(db))
-        return 0;
+        return false;
 
     return ftruncate_(db->journal_file, 0L);
 }
 
-int ReplayJournal(Database *db) {
+bool ReplayJournal(Database *db) {
     long journal_size;
     int16 entry_count, i;
     DBJournalEntry entry;
@@ -562,7 +562,7 @@ int ReplayJournal(Database *db) {
     DBPage page;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     journal_size = getFileSize(db->journal_file);
     entry_count = (int16)(journal_size / JOURNAL_ENTRY_SIZE);
@@ -592,31 +592,31 @@ int ReplayJournal(Database *db) {
     }
 
     if (!RebuildAllIndexes(db))
-        return 0;
+        return false;
 
-    db->header.journal_pending = 0;
+    db->header.journal_pending = false;
     if (!WriteHeader(db))
-        return 0;
+        return false;
 
     return ftruncate_(db->journal_file, 0L);
 }
 
 /* Database operations */
 
-int CreateDatabase(const char *name, uint16 record_size) {
+bool CreateDatabase(const char *name, uint16 record_size) {
     FILE *f, *jf;
     byte page[DB_PAGE_SIZE];
     char path[320];
     int i;
 
     if (record_size == 0)
-        return 0;
+        return false;
 
     /* Create data file */
     sprintf(path, "%s.dat", name);
     f = fopen(path, "wb");
     if (!f)
-        return 0;
+        return false;
 
     /* Write header page */
     memset(page, 0, DB_PAGE_SIZE);
@@ -632,39 +632,39 @@ int CreateDatabase(const char *name, uint16 record_size) {
 
     if (fwrite(page, 1, DB_PAGE_SIZE, f) != DB_PAGE_SIZE) {
         fclose(f);
-        return 0;
+        return false;
     }
 
     /* Write free list page */
     memset(page, 0, DB_PAGE_SIZE);
     if (fwrite(page, 1, DB_PAGE_SIZE, f) != DB_PAGE_SIZE) {
         fclose(f);
-        return 0;
+        return false;
     }
 
     fclose(f);
 
     /* Create primary index */
     if (!CreateIndexFile(name, -1))
-        return 0;
+        return false;
 
     /* Create journal file */
     sprintf(path, "%s.jnl", name);
     jf = fopen(path, "wb");
     if (!jf)
-        return 0;
+        return false;
     fclose(jf);
 
     (void)i;
-    return 1;
+    return true;
 }
 
-int OpenDatabase(const char *name, Database *db) {
+bool OpenDatabase(const char *name, Database *db) {
     char path[320];
     size_t len;
 
     db->primary_index = NULL;
-    db->is_open = 0;
+    db->is_open = false;
 
     /* Copy name */
     len = strlen(name);
@@ -677,14 +677,14 @@ int OpenDatabase(const char *name, Database *db) {
     sprintf(path, "%s.dat", name);
     db->data_file = fopen(path, "r+b");
     if (!db->data_file)
-        return 0;
+        return false;
 
-    db->is_open = 1;
+    db->is_open = true;
 
     if (!ReadHeader(db)) {
         fclose(db->data_file);
-        db->is_open = 0;
-        return 0;
+        db->is_open = false;
+        return false;
     }
 
     /* Open journal file */
@@ -695,8 +695,8 @@ int OpenDatabase(const char *name, Database *db) {
         db->journal_file = fopen(path, "w+b");
         if (!db->journal_file) {
             fclose(db->data_file);
-            db->is_open = 0;
-            return 0;
+            db->is_open = false;
+            return false;
         }
     }
 
@@ -705,16 +705,16 @@ int OpenDatabase(const char *name, Database *db) {
         if (!ReplayJournal(db)) {
             fclose(db->journal_file);
             fclose(db->data_file);
-            db->is_open = 0;
-            return 0;
+            db->is_open = false;
+            return false;
         }
     }
 
     if (!ReadFreeList(db)) {
         fclose(db->journal_file);
         fclose(db->data_file);
-        db->is_open = 0;
-        return 0;
+        db->is_open = false;
+        return false;
     }
 
     /* Allocate and open primary index */
@@ -722,8 +722,8 @@ int OpenDatabase(const char *name, Database *db) {
     if (!db->primary_index) {
         fclose(db->journal_file);
         fclose(db->data_file);
-        db->is_open = 0;
-        return 0;
+        db->is_open = false;
+        return false;
     }
 
     if (!OpenIndexFile(db->primary_index, name, -1)) {
@@ -731,11 +731,11 @@ int OpenDatabase(const char *name, Database *db) {
         db->primary_index = NULL;
         fclose(db->journal_file);
         fclose(db->data_file);
-        db->is_open = 0;
-        return 0;
+        db->is_open = false;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 void CloseDatabase(Database *db) {
@@ -754,21 +754,21 @@ void CloseDatabase(Database *db) {
     fclose(db->journal_file);
     fclose(db->data_file);
 
-    db->is_open = 0;
+    db->is_open = false;
 }
 
 /* Record operations */
 
-int AddRecord(Database *db, const byte *data, int32 *record_id) {
+bool AddRecord(Database *db, const byte *data, int32 *record_id) {
     int16 pages_needed, i;
     int32 first_page;
     DBJournalEntry entry;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     if (!BeginTransaction(db))
-        return 0;
+        return false;
 
     *record_id = db->header.next_record_id;
     db->header.next_record_id++;
@@ -777,7 +777,7 @@ int AddRecord(Database *db, const byte *data, int32 *record_id) {
 
     if (!AllocatePages(db, pages_needed, &first_page)) {
         RollbackTransaction(db);
-        return 0;
+        return false;
     }
 
     /* Journal entries */
@@ -799,52 +799,52 @@ int AddRecord(Database *db, const byte *data, int32 *record_id) {
 
         if (!WriteJournalEntry(db, &entry)) {
             RollbackTransaction(db);
-            return 0;
+            return false;
         }
     }
 
     if (!WriteRecord(db, first_page, *record_id, data)) {
         RollbackTransaction(db);
-        return 0;
+        return false;
     }
 
     if (!InsertIntoIndex(db->primary_index, *record_id, first_page)) {
         RollbackTransaction(db);
-        return 0;
+        return false;
     }
 
     db->header.record_count++;
 
     if (!CommitTransaction(db))
-        return 0;
+        return false;
 
-    return 1;
+    return true;
 }
 
-int FindRecordByID(Database *db, int32 id, byte *data) {
+bool FindRecordByID(Database *db, int32 id, byte *data) {
     int32 values[10];
     int16 count;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     if (!FindInIndex(db->primary_index, id, values, 10, &count))
-        return 0;
+        return false;
 
     if (count == 0)
-        return 0;
+        return false;
 
     return ReadRecord(db, values[0], data);
 }
 
-int FindRecordByString(Database *db, const char *field_name, const char *value,
-                       byte *data, int32 *record_id) {
+bool FindRecordByString(Database *db, const char *field_name, const char *value,
+                        byte *data, int32 *record_id) {
     /* Not yet implemented */
     (void)db; (void)field_name; (void)value; (void)data; (void)record_id;
-    return 0;
+    return false;
 }
 
-int UpdateRecord(Database *db, int32 id, const byte *data) {
+bool UpdateRecord(Database *db, int32 id, const byte *data) {
     byte *old_data;
     int32 values[10];
     int16 count, pages_needed, i;
@@ -852,27 +852,27 @@ int UpdateRecord(Database *db, int32 id, const byte *data) {
     DBJournalEntry entry;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     old_data = (byte *)malloc(db->header.record_size);
     if (!old_data)
-        return 0;
+        return false;
 
     if (!FindRecordByID(db, id, old_data)) {
         free(old_data);
-        return 0;
+        return false;
     }
     free(old_data);
 
     if (!FindInIndex(db->primary_index, id, values, 10, &count))
-        return 0;
+        return false;
     if (count == 0)
-        return 0;
+        return false;
 
     first_page = values[0];
 
     if (!BeginTransaction(db))
-        return 0;
+        return false;
 
     pages_needed = CalculatePagesNeeded(db->header.record_size);
 
@@ -894,22 +894,22 @@ int UpdateRecord(Database *db, int32 id, const byte *data) {
 
         if (!WriteJournalEntry(db, &entry)) {
             RollbackTransaction(db);
-            return 0;
+            return false;
         }
     }
 
     if (!WriteRecord(db, first_page, id, data)) {
         RollbackTransaction(db);
-        return 0;
+        return false;
     }
 
     if (!CommitTransaction(db))
-        return 0;
+        return false;
 
-    return 1;
+    return true;
 }
 
-int DeleteRecord(Database *db, int32 id) {
+bool DeleteRecord(Database *db, int32 id) {
     byte *data;
     int32 values[10];
     int16 count, pages_needed;
@@ -917,27 +917,27 @@ int DeleteRecord(Database *db, int32 id) {
     DBJournalEntry entry;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     data = (byte *)malloc(db->header.record_size);
     if (!data)
-        return 0;
+        return false;
 
     if (!FindRecordByID(db, id, data)) {
         free(data);
-        return 0;
+        return false;
     }
     free(data);
 
     if (!FindInIndex(db->primary_index, id, values, 10, &count))
-        return 0;
+        return false;
     if (count == 0)
-        return 0;
+        return false;
 
     first_page = values[0];
 
     if (!BeginTransaction(db))
-        return 0;
+        return false;
 
     pages_needed = CalculatePagesNeeded(db->header.record_size);
 
@@ -948,42 +948,42 @@ int DeleteRecord(Database *db, int32 id) {
 
     if (!WriteJournalEntry(db, &entry)) {
         RollbackTransaction(db);
-        return 0;
+        return false;
     }
 
     if (!FreePages(db, first_page, pages_needed)) {
         RollbackTransaction(db);
-        return 0;
+        return false;
     }
 
     if (!DeleteFromIndex(db->primary_index, id, first_page)) {
         RollbackTransaction(db);
-        return 0;
+        return false;
     }
 
     db->header.record_count--;
 
     if (!CommitTransaction(db))
-        return 0;
+        return false;
 
-    return 1;
+    return true;
 }
 
 /* Index maintenance */
 
-int AddIndex(Database *db, const char *field_name, byte index_type) {
+bool AddIndex(Database *db, const char *field_name, byte index_type) {
     int16 index_num;
     int i;
     size_t len;
 
     if (!db->is_open)
-        return 0;
+        return false;
     if (db->header.index_count >= DB_MAX_INDEXES)
-        return 0;
+        return false;
 
     len = strlen(field_name);
     if (len > 29)
-        return 0;
+        return false;
 
     /* Find next available index number */
     index_num = 0;
@@ -993,10 +993,10 @@ int AddIndex(Database *db, const char *field_name, byte index_type) {
     }
 
     if (index_num >= DB_MAX_INDEXES)
-        return 0;
+        return false;
 
     if (!CreateIndexFile(db->name, index_num))
-        return 0;
+        return false;
 
     memset(db->header.indexes[db->header.index_count].field_name, 0, 30);
     memcpy(db->header.indexes[db->header.index_count].field_name, field_name, len);
@@ -1006,13 +1006,13 @@ int AddIndex(Database *db, const char *field_name, byte index_type) {
 
     if (!WriteHeader(db)) {
         db->header.index_count--;
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
-int RebuildIndex(Database *db, int16 index_number) {
+bool RebuildIndex(Database *db, int16 index_number) {
     DBPage page;
     int32 page_num;
     long file_size;
@@ -1020,32 +1020,32 @@ int RebuildIndex(Database *db, int16 index_number) {
     int is_secondary = 0;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     if (index_number == -1) {
         tree = db->primary_index;
     } else if (index_number >= 0 && index_number < DB_MAX_INDEXES) {
         tree = (BTree *)malloc(sizeof(BTree));
         if (!tree)
-            return 0;
+            return false;
         if (!OpenIndexFile(tree, db->name, index_number)) {
             free(tree);
-            return 0;
+            return false;
         }
         is_secondary = 1;
     } else {
-        return 0;
+        return false;
     }
 
     /* Close and recreate */
     CloseBTree(tree);
     if (!CreateIndexFile(db->name, index_number)) {
         if (is_secondary) free(tree);
-        return 0;
+        return false;
     }
     if (!OpenIndexFile(tree, db->name, index_number)) {
         if (is_secondary) free(tree);
-        return 0;
+        return false;
     }
 
     file_size = getFileSize(db->data_file) / DB_PAGE_SIZE;
@@ -1067,26 +1067,26 @@ int RebuildIndex(Database *db, int16 index_number) {
         free(tree);
     }
 
-    return 1;
+    return true;
 }
 
-int RebuildAllIndexes(Database *db) {
+bool RebuildAllIndexes(Database *db) {
     int i;
 
     if (!RebuildIndex(db, -1))
-        return 0;
+        return false;
 
     for (i = 0; i < (int)db->header.index_count; i++) {
         if (!RebuildIndex(db, (int16)db->header.indexes[i].index_number))
-            return 0;
+            return false;
     }
 
-    return 1;
+    return true;
 }
 
 /* Maintenance */
 
-int CompactDatabase(Database *db) {
+bool CompactDatabase(Database *db) {
     DBPage page;
     int32 page_num, new_page_num;
     long file_size;
@@ -1094,15 +1094,15 @@ int CompactDatabase(Database *db) {
     int16 pages_needed;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     if (!BeginTransaction(db))
-        return 0;
+        return false;
 
     data = (byte *)malloc(db->header.record_size);
     if (!data) {
         RollbackTransaction(db);
-        return 0;
+        return false;
     }
 
     file_size = getFileSize(db->data_file) / DB_PAGE_SIZE;
@@ -1129,7 +1129,7 @@ int CompactDatabase(Database *db) {
 
     if (!RebuildAllIndexes(db)) {
         RollbackTransaction(db);
-        return 0;
+        return false;
     }
 
     db->free_list.free_page_count = 0;
@@ -1139,13 +1139,13 @@ int CompactDatabase(Database *db) {
     db->header.last_compacted = 0;
 
     if (!CommitTransaction(db))
-        return 0;
+        return false;
 
-    return 1;
+    return true;
 }
 
-int ValidateDatabase(Database *db) {
-    int valid = 1;
+bool ValidateDatabase(Database *db) {
+    bool valid = true;
     DBPage page;
     int32 page_num;
     long file_size;
@@ -1154,13 +1154,13 @@ int ValidateDatabase(Database *db) {
     int16 count;
 
     if (!db->is_open)
-        return 0;
+        return false;
 
     if (memcmp(db->header.signature, DB_SIGNATURE, 8) != 0)
-        valid = 0;
+        valid = false;
 
     if (db->header.version != DB_VERSION)
-        valid = 0;
+        valid = false;
 
     file_size = getFileSize(db->data_file) / DB_PAGE_SIZE;
 
@@ -1174,17 +1174,17 @@ int ValidateDatabase(Database *db) {
     }
 
     if (active_count != db->header.record_count * CalculatePagesNeeded(db->header.record_size))
-        valid = 0;
+        valid = false;
 
     if ((uint16)free_count != db->free_list.free_page_count)
-        valid = 0;
+        valid = false;
 
     /* Verify primary index */
     for (page_num = 2; page_num < (int32)file_size; page_num++) {
         if (ReadPage(db, page_num, &page)) {
             if (page.status == PS_ACTIVE) {
                 if (!FindInIndex(db->primary_index, page.id, values, 10, &count) || count == 0)
-                    valid = 0;
+                    valid = false;
             }
         }
     }

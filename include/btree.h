@@ -27,9 +27,7 @@
 
 #include <stdio.h>
 
-#ifndef VDB_H
-#include "vdb.h"
-#endif
+#include "vdbtypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,18 +77,18 @@ typedef struct {
     char        filename[256];
     FILE       *fp;
     BTreeHeader header;
-    int         is_open;
+    bool        is_open;
 } BTree;
 
 /* Tree operations */
-int  CreateBTree(const char *filename);
-int  OpenBTree(BTree *tree, const char *filename);
+bool CreateBTree(const char *filename);
+bool OpenBTree(BTree *tree, const char *filename);
 void CloseBTree(BTree *tree);
 
-int  BTreeInsert(BTree *tree, int32 key, int32 value);
-int  BTreeFind(BTree *tree, int32 key, int32 *values, int16 max_values, int16 *count);
-int  BTreeDelete(BTree *tree, int32 key);
-int  BTreeDeleteValue(BTree *tree, int32 key, int32 value);
+bool BTreeInsert(BTree *tree, int32 key, int32 value);
+bool BTreeFind(BTree *tree, int32 key, int32 *values, int16 max_values, int16 *count);
+bool BTreeDelete(BTree *tree, int32 key);
+bool BTreeDeleteValue(BTree *tree, int32 key, int32 value);
 
 /* Utility */
 int32 StringKey(const char *s);

@@ -25,9 +25,7 @@
 #ifndef HASH_H
 #define HASH_H
 
-#ifndef VDB_H
-#include "vdb.h"
-#endif
+#include "vdbtypes.h"
 
 #ifdef __cplusplus
 extern "C" {

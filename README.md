@@ -1,6 +1,6 @@
 # libvdb
 
-A portable, file-based database library written in C89. Ported from the Pascal BBS database system ([retrobbs-pascal](https://github.com/vaelen/retrobbs-pascal)).
+A portable, file-based database library written in C89.
 
 ## Target Platforms
 
@@ -131,6 +131,8 @@ All multi-byte values are stored little-endian. Pages are 512 bytes.
 | 2+   | Data pages (records span consecutive pages) |
 
 B-Tree index files use a separate 512-byte page format with header, internal, leaf, and overflow page types.
+
+For a detailed description of the database file format, see [db.md](db.md).
 
 ## License
 

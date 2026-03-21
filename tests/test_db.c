@@ -69,7 +69,7 @@ int test_db_header_roundtrip(void) {
     ASSERT_EQ(256, db.header.record_size);
     ASSERT_EQ(0, db.header.record_count);
     ASSERT_EQ(1, db.header.next_record_id);
-    ASSERT_EQ(0, db.header.journal_pending);
+    ASSERT_EQ(false, db.header.journal_pending);
     ASSERT_EQ(0, db.header.index_count);
 
     CloseDatabase(&db);

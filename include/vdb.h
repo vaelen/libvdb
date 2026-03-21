@@ -32,57 +32,7 @@
  * Each component header can also be included independently.
  */
 
-/* Fixed-width integer types for C89 */
-
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-  #include <stdint.h>
-  typedef uint8_t  byte;
-  typedef int16_t  int16;
-  typedef uint16_t uint16;
-  typedef int32_t  int32;
-  typedef uint32_t uint32;
-#elif defined(_MSC_VER)
-  typedef unsigned char  byte;
-  typedef short          int16;
-  typedef unsigned short uint16;
-  typedef long           int32;
-  typedef unsigned long  uint32;
-#elif defined(__TURBOC__) || defined(__BORLANDC__)
-  typedef unsigned char  byte;
-  typedef int            int16;
-  typedef unsigned int   uint16;
-  typedef long           int32;
-  typedef unsigned long  uint32;
-#elif defined(__WATCOMC__)
-  typedef unsigned char  byte;
-  typedef short          int16;
-  typedef unsigned short uint16;
-  typedef long           int32;
-  typedef unsigned long  uint32;
-#elif defined(THINK_C) || defined(__MWERKS__) || defined(__MC68K__) || defined(__POWERPC__)
-  typedef unsigned char  byte;
-  typedef short          int16;
-  typedef unsigned short uint16;
-  typedef long           int32;
-  typedef unsigned long  uint32;
-#else
-  /* Generic - detect sizes */
-  typedef unsigned char  byte;
-  typedef short          int16;
-  typedef unsigned short uint16;
-  #if defined(__LP64__) || defined(_LP64) || (defined(__SIZEOF_LONG__) && __SIZEOF_LONG__ == 8)
-    /* 64-bit Unix: long is 8 bytes, int is 4 bytes */
-    typedef int            int32;
-    typedef unsigned int   uint32;
-  #else
-    /* 32-bit or Windows LLP64: long is 4 bytes */
-    typedef long           int32;
-    typedef unsigned long  uint32;
-  #endif
-#endif
-
-/* Epoch conversion constant: seconds between Mac (1/1/1904) and Unix (1/1/1970) */
-#define EPOCH_DELTA 2082844800UL
+#include "vdbtypes.h"
 
 #include "hash.h"
 #include "btree.h"

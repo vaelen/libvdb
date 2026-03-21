@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 make              # Build library (lib/libvdb.a) and test binaries
-make test         # Build and run all tests (30 tests across 3 suites)
+make test         # Build and run all tests (35 tests across 3 suites)
 make clean        # Remove build artifacts
 make debug        # Build with -g -DDEBUG
 make valgrind     # Run tests under valgrind
@@ -31,7 +31,7 @@ On-disk format is little-endian with 512-byte pages. Endian conversion is handle
 
 ## Critical Gotchas
 
-- **64-bit LP64 systems**: `long` is 8 bytes. The `int32`/`uint32` typedefs in `vdb.h` use `int`/`unsigned int` on LP64, not `long`. Getting this wrong corrupts on-disk structures.
+- **64-bit LP64 systems**: `long` is 8 bytes. The `int32`/`uint32` typedefs in `vdbtypes.h` use `int`/`unsigned int` on LP64, not `long`. Getting this wrong corrupts on-disk structures.
 - **CRC32 cksum**: Always processes 4 bytes of length (including leading zeros), unlike POSIX cksum. Test vector for "123456789" is `0x8AEAB5FB`.
 - **Stack usage**: B-Tree `LeafNode` is ~15KB on stack (60 entries × 250 bytes).
 - **Minimal heap**: Only `BTree *primary_index` in `Database` uses malloc. Everything else is stack or caller-provided.

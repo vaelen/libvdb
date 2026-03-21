@@ -109,14 +109,14 @@ static int readLeafNode(BTree *tree, int32 page_num, LeafNode *node) {
 
 /* Public API */
 
-int CreateBTree(const char *filename) {
+bool CreateBTree(const char *filename) {
     FILE *fp;
     BTree tree;
     LeafNode root_node;
 
     fp = fopen(filename, "wb");
     if (!fp)
-        return 0;
+        return false;
 
     tree.fp = fp;
 
@@ -137,16 +137,16 @@ int CreateBTree(const char *filename) {
     writeLeafNode(&tree, 1, &root_node);
 
     fclose(fp);
-    return 1;
+    return true;
 }
 
-int OpenBTree(BTree *tree, const char *filename) {
+bool OpenBTree(BTree *tree, const char *filename) {
     FILE *fp;
     size_t len;
 
     fp = fopen(filename, "r+b");
     if (!fp)
-        return 0;
+        return false;
 
     tree->fp = fp;
     len = strlen(filename);
@@ -154,21 +154,21 @@ int OpenBTree(BTree *tree, const char *filename) {
         len = sizeof(tree->filename) - 1;
     memcpy(tree->filename, filename, len);
     tree->filename[len] = '\0';
-    tree->is_open = 1;
+    tree->is_open = true;
 
     if (!readHeader(tree)) {
         fclose(fp);
-        tree->is_open = 0;
-        return 0;
+        tree->is_open = false;
+        return false;
     }
 
     if (memcmp(tree->header.magic, BTREE_MAGIC, 4) != 0) {
         fclose(fp);
-        tree->is_open = 0;
-        return 0;
+        tree->is_open = false;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 void CloseBTree(BTree *tree) {
@@ -176,19 +176,19 @@ void CloseBTree(BTree *tree) {
         writeHeader(tree);
         fclose(tree->fp);
         tree->fp = NULL;
-        tree->is_open = 0;
+        tree->is_open = false;
     }
 }
 
-int BTreeInsert(BTree *tree, int32 key, int32 value) {
+bool BTreeInsert(BTree *tree, int32 key, int32 value) {
     LeafNode root_node;
     int i, j;
 
     if (!tree->is_open)
-        return 0;
+        return false;
 
     if (!readLeafNode(tree, tree->header.root_page, &root_node))
-        return 0;
+        return false;
 
     /* Find key or insertion point */
     i = 0;
@@ -198,13 +198,13 @@ int BTreeInsert(BTree *tree, int32 key, int32 value) {
     if (i < (int)root_node.key_count && root_node.entries[i].key == key) {
         /* Key exists, add value */
         if (root_node.entries[i].value_count >= BT_MAX_VALUES)
-            return 0; /* overflow not implemented */
+            return false; /* overflow not implemented */
         root_node.entries[i].values[root_node.entries[i].value_count] = value;
         root_node.entries[i].value_count++;
     } else {
         /* Insert new key */
         if (root_node.key_count >= BT_MAX_KEYS)
-            return 0; /* split not implemented */
+            return false; /* split not implemented */
 
         for (j = (int)root_node.key_count; j > i; j--)
             root_node.entries[j] = root_node.entries[j - 1];
@@ -217,20 +217,20 @@ int BTreeInsert(BTree *tree, int32 key, int32 value) {
     }
 
     writeLeafNode(tree, tree->header.root_page, &root_node);
-    return 1;
+    return true;
 }
 
-int BTreeFind(BTree *tree, int32 key, int32 *values, int16 max_values, int16 *count) {
+bool BTreeFind(BTree *tree, int32 key, int32 *values, int16 max_values, int16 *count) {
     LeafNode root_node;
     int i, j;
 
     *count = 0;
 
     if (!tree->is_open)
-        return 0;
+        return false;
 
     if (!readLeafNode(tree, tree->header.root_page, &root_node))
-        return 0;
+        return false;
 
     for (i = 0; i < (int)root_node.key_count; i++) {
         if (root_node.entries[i].key == key) {
@@ -240,22 +240,22 @@ int BTreeFind(BTree *tree, int32 key, int32 *values, int16 max_values, int16 *co
                     (*count)++;
                 }
             }
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
-int BTreeDelete(BTree *tree, int32 key) {
+bool BTreeDelete(BTree *tree, int32 key) {
     LeafNode root_node;
     int i, j;
 
     if (!tree->is_open)
-        return 0;
+        return false;
 
     if (!readLeafNode(tree, tree->header.root_page, &root_node))
-        return 0;
+        return false;
 
     for (i = 0; i < (int)root_node.key_count; i++) {
         if (root_node.entries[i].key == key) {
@@ -263,22 +263,22 @@ int BTreeDelete(BTree *tree, int32 key) {
                 root_node.entries[j] = root_node.entries[j + 1];
             root_node.key_count--;
             writeLeafNode(tree, tree->header.root_page, &root_node);
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
-int BTreeDeleteValue(BTree *tree, int32 key, int32 value) {
+bool BTreeDeleteValue(BTree *tree, int32 key, int32 value) {
     LeafNode root_node;
     int i, j, k;
 
     if (!tree->is_open)
-        return 0;
+        return false;
 
     if (!readLeafNode(tree, tree->header.root_page, &root_node))
-        return 0;
+        return false;
 
     for (i = 0; i < (int)root_node.key_count; i++) {
         if (root_node.entries[i].key == key) {
@@ -297,14 +297,14 @@ int BTreeDeleteValue(BTree *tree, int32 key, int32 value) {
                     }
 
                     writeLeafNode(tree, tree->header.root_page, &root_node);
-                    return 1;
+                    return true;
                 }
             }
-            return 0; /* value not found */
+            return false; /* value not found */
         }
     }
 
-    return 0;
+    return false;
 }
 
 int32 StringKey(const char *s) {

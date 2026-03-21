@@ -428,109 +428,109 @@ The `db` module should provide high-level helper functions to encapsulate these 
 
 ### Database Operations
 
-**`int OpenDatabase(const char *name, Database *db)`**
+**`bool OpenDatabase(const char *name, Database *db)`**
 - Opens all database files (.DAT, .IDX, .I??)
 - Loads metadata into memory
-- Returns non-zero on success
+- Returns true on success
 
 **`void CloseDatabase(Database *db)`**
 - Closes all open files
 - Writes any cached metadata
 
-**`int CreateDatabase(const char *name, uint16 record_size)`**
+**`bool CreateDatabase(const char *name, uint16 record_size)`**
 - Creates new .DAT and .IDX files
 - Initializes with default values
-- Returns non-zero on success
+- Returns true on success
 
 ### Record Operations
 
-**`int AddRecord(Database *db, const byte *data, int32 *record_id)`**
+**`bool AddRecord(Database *db, const byte *data, int32 *record_id)`**
 - Finds free block or allocates new one
 - Writes data to .DAT file
 - Updates all indexes
 - Returns new record ID via pointer
 
-**`int FindRecordByID(Database *db, int32 id, byte *data)`**
+**`bool FindRecordByID(Database *db, int32 id, byte *data)`**
 - Uses ID index to locate block
 - Reads and returns record data
-- Returns non-zero if found
+- Returns true if found
 
-**`int FindRecordByString(Database *db, const char *field_name, const char *value, byte *data, int32 *record_id)`**
+**`bool FindRecordByString(Database *db, const char *field_name, const char *value, byte *data, int32 *record_id)`**
 - Generates key using GenerateIndexKey()
 - Uses appropriate string index
 - Handles hash collisions
 - Returns first matching record
 
-**`int UpdateRecord(Database *db, int32 id, const byte *data)`**
+**`bool UpdateRecord(Database *db, int32 id, const byte *data)`**
 - Finds record by ID
 - Overwrites data in existing block
 - Updates indexes if indexed fields changed
-- Returns non-zero on success
+- Returns true on success
 
-**`int DeleteRecord(Database *db, int32 id)`**
+**`bool DeleteRecord(Database *db, int32 id)`**
 - Marks block as empty
 - Removes from all indexes
-- Returns non-zero on success
+- Returns true on success
 
 ### Index Operations
 
-**`int AddIndex(Database *db, const char *field_name, byte index_type)`**
+**`bool AddIndex(Database *db, const char *field_name, byte index_type)`**
 - Creates new .I?? file
 - Scans existing records to build index
 - Updates index list in page 0 (increment `index_count`, add to `indexes` array)
-- Returns non-zero on success
+- Returns true on success
 - Maximum 15 indexes supported
 
-**`int RebuildIndex(Database *db, int16 index_number)`**
+**`bool RebuildIndex(Database *db, int16 index_number)`**
 - Clears and rebuilds specified index
 - Useful for corruption recovery
-- Returns non-zero on success
+- Returns true on success
 
 ### Maintenance Operations
 
-**`int CompactDatabase(Database *db)`**
+**`bool CompactDatabase(Database *db)`**
 - Removes empty pages by moving active records
 - Rebuilds all indexes
 - Rebuilds free list with accurate `free_page_count` and `free_page_list_len`
 - Updates last_compacted timestamp
-- Returns non-zero on success
+- Returns true on success
 
-**`int UpdateFreePages(Database *db)`**
+**`bool UpdateFreePages(Database *db)`**
 - Scans .DAT file for pages with `status == PS_EMPTY`
 - Fills `free_pages` array with up to 127 empty page numbers
 - Sets `free_page_list_len` to actual number found
 - Sets `free_page_count` to actual total count of empty pages (for accuracy)
 - Called automatically when `free_page_count > 0` but `free_page_list_len == 0`
-- Returns non-zero on success
+- Returns true on success
 
-**`int ValidateDatabase(Database *db)`**
+**`bool ValidateDatabase(Database *db)`**
 - Checks for corruption
 - Validates indexes against data
-- Returns non-zero if database is valid
+- Returns true if database is valid
 
 ### Transaction Operations
 
-**`int BeginTransaction(Database *db)`**
+**`bool BeginTransaction(Database *db)`**
 - Sets `header.journal_pending = true`
 - Prepares journal file for writing
 - All subsequent operations will be journaled
 
-**`int CommitTransaction(Database *db)`**
+**`bool CommitTransaction(Database *db)`**
 - Sets `header.journal_pending = false`
 - Truncates journal file to 0 bytes
 - Finalizes all pending operations
 
-**`int RollbackTransaction(Database *db)`**
+**`bool RollbackTransaction(Database *db)`**
 - Discards journal without applying
 - Sets `header.journal_pending = false`
 - Truncates journal file to 0 bytes
 - Use when aborting an operation
 
-**`int ReplayJournal(Database *db)`**
+**`bool ReplayJournal(Database *db)`**
 - Reads and validates all journal entries
 - Applies each operation to database
 - Rebuilds all indexes
-- Returns non-zero on success
+- Returns true on success
 - Called automatically during `OpenDatabase` if `journal_pending` is true
 
 ## Data Types
@@ -590,7 +590,7 @@ typedef struct {
     FILE      *data_file;
     FILE      *journal_file;
     BTree     *primary_index;  /* .IDX - record_id → page_num */
-    int        is_open;
+    bool       is_open;
 } Database;
 ```
 
