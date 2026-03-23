@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright 2025, Andrew C. Young <andrew@vaelen.org>
+ * Copyright 2026, Andrew C. Young <andrew@vaelen.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@
 
 #include "vdbtypes.h"
 
+#include "vdbutil.h"
 #include "hash.h"
 #include "btree.h"
 #include "db.h"

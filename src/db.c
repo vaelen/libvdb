@@ -5,7 +5,7 @@
  * journaling, and maintenance operations. Ported from db.pas.
  */
 
-#include "internal.h"
+#include "vdbutil.h"
 #include "db.h"
 
 #define JOURNAL_ENTRY_SIZE 518

@@ -5,7 +5,7 @@
  * Stored in 512-byte pages. Ported from btree.pas.
  */
 
-#include "internal.h"
+#include "vdbutil.h"
 #include "btree.h"
 #include "hash.h"
 

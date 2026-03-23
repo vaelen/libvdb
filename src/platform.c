@@ -10,7 +10,7 @@
   #define _POSIX_C_SOURCE 200112L
 #endif
 
-#include "internal.h"
+#include "vdbutil.h"
 
 /* File truncation */
 

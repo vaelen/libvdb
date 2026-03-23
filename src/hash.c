@@ -5,7 +5,7 @@
  * Ported from hash.pas.
  */
 
-#include "internal.h"
+#include "vdbutil.h"
 #include "hash.h"
 
 /* CRC-16/KERMIT (CCITT) Table */

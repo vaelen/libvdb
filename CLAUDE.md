@@ -25,7 +25,7 @@ Three layers, each with an independently includable header (or use `vdb.h` for a
 - **btree** (`btree.h`/`btree.c`) — File-backed B-Tree (order 60, 512-byte pages)
 - **db** (`db.h`/`db.c`) — Record-oriented database with journaling, free-page management, and secondary indexes built on the B-Tree
 
-On-disk format is little-endian with 512-byte pages. Endian conversion is handled by macros in `src/internal.h` (`HTOLE16`/`LE16TOH`/`PUT_LE32`/`GET_LE32` etc.). The `internal.h` header is private and not part of the public API.
+On-disk format is little-endian with 512-byte pages. Endian conversion is handled by macros in `include/vdbutil.h` (`HTOLE16`/`LE16TOH`/`PUT_LE32`/`GET_LE32` etc.), which is included via `vdb.h`.
 
 `src/platform.c` provides `ftruncate_()` and Mac/Unix epoch conversion, with `_POSIX_C_SOURCE` defined for POSIX compliance in C89 mode.
 
