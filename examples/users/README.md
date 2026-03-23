@@ -2,7 +2,8 @@
 
 This example demonstrates how to use **libvdb** to build a record-oriented
 database application with secondary indexes and password hashing. It
-implements a simple command-line tool for managing user accounts.
+implements a simple tool for managing user accounts, with both an
+interactive menu and a command-line interface.
 
 ## Building
 
@@ -24,6 +25,36 @@ make clean
 ```
 
 ## Usage
+
+### Interactive menu
+
+Run without arguments to get an interactive menu:
+
+```bash
+./usersadm
+```
+
+```
+=== User Database Administration ===
+
+1) Initialize database
+2) List users
+3) Create user
+4) View user
+5) Edit user
+6) Delete user
+7) Quit
+
+Choice:
+```
+
+The menu loops after each operation until you choose quit. This mode
+works on systems that lack a command-line shell, such as Classic Mac OS,
+where the program is launched by double-clicking.
+
+### Command-line interface
+
+For scripting or Unix-style use, pass a command as an argument:
 
 ```
 usersadm <command> [args]

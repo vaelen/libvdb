@@ -638,12 +638,75 @@ static int cmd_delete(const char *arg)
 }
 
 /* ------------------------------------------------------------------ */
+/* Interactive menu                                                   */
+/* ------------------------------------------------------------------ */
+
+static int interactive_menu(void)
+{
+    char choice[16];
+    char arg[128];
+    int rc;
+
+    for (;;) {
+        printf("\n=== User Database Administration ===\n\n");
+        printf("1) Initialize database\n");
+        printf("2) List users\n");
+        printf("3) Create user\n");
+        printf("4) View user\n");
+        printf("5) Edit user\n");
+        printf("6) Delete user\n");
+        printf("7) Quit\n");
+
+        if (read_line("\nChoice: ", choice, sizeof(choice)) < 0)
+            break;
+
+        rc = 0;
+        switch (choice[0]) {
+        case '1':
+            rc = cmd_init();
+            break;
+        case '2':
+            rc = cmd_list();
+            break;
+        case '3':
+            rc = cmd_create();
+            break;
+        case '4':
+            if (read_line("ID, username, or email: ", arg, sizeof(arg)) > 0)
+                rc = cmd_view(arg);
+            break;
+        case '5':
+            if (read_line("User ID: ", arg, sizeof(arg)) > 0)
+                rc = cmd_edit(arg);
+            break;
+        case '6':
+            if (read_line("User ID: ", arg, sizeof(arg)) > 0)
+                rc = cmd_delete(arg);
+            break;
+        case '7':
+        case 'q':
+        case 'Q':
+            return 0;
+        default:
+            printf("Invalid choice.\n");
+            continue;
+        }
+
+        if (rc != 0)
+            printf("(command returned error)\n");
+    }
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------ */
 /* Usage and main                                                     */
 /* ------------------------------------------------------------------ */
 
 static void usage(void)
 {
-    printf("Usage: usersadm <command> [args]\n\n");
+    printf("Usage: usersadm [command] [args]\n\n");
+    printf("Run without arguments for interactive menu.\n\n");
     printf("Commands:\n");
     printf("  init              Create a new user database\n");
     printf("  list              List all users\n");
@@ -655,10 +718,8 @@ static void usage(void)
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-        usage();
-        return 1;
-    }
+    if (argc < 2)
+        return interactive_menu();
 
     if (strcmp(argv[1], "init") == 0)
         return cmd_init();
