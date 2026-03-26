@@ -1,0 +1,17 @@
+# Build output
+bin/
+
+# Database files (created by useradm and tests)
+*.DAT
+*.IDX
+*.JNL
+*.I[0-9][0-9]
+
+# Conversation exports
+*.txt
+
+# Editor/OS artifacts
+*~
+*.swp
+*.bak
+.DS_Store
