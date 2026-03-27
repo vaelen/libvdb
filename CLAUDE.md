@@ -11,7 +11,7 @@ Vaelen's Database (vDB) is a portable ANSI C (C89) database system targeting ret
 ```bash
 make                    # build everything
 make test               # build and run all tests
-./bin/test_<name>       # run a specific test suite (e.g., ./bin/test_btree)
+./bin/test/<name>       # run a specific test suite (e.g., ./bin/test/btree)
 ```
 
 Code must compile in **strict C89 mode** (e.g., `gcc -ansi -pedantic`).

@@ -273,18 +273,18 @@ gcc -ansi -pedantic -Wall -Werror -Iinclude
 ### Running individual tests
 
 ```bash
-./bin/test_test       # Test framework self-tests
-./bin/test_types      # Portable type tests
-./bin/test_string     # String utility tests
-./bin/test_crc16      # CRC-16 tests
-./bin/test_sha1       # SHA-1 tests
-./bin/test_btree      # B-Tree tests
-./bin/test_dbutil     # Database utility tests
-./bin/test_db         # Database core tests
-./bin/test_record     # Record serialization tests
-./bin/test_journal    # Journaling tests
-./bin/test_maint      # Maintenance/compaction tests
-./bin/test_useradm    # User admin record tests
+./bin/test/test       # Test framework self-tests
+./bin/test/types      # Portable type tests
+./bin/test/string     # String utility tests
+./bin/test/crc16      # CRC-16 tests
+./bin/test/sha1       # SHA-1 tests
+./bin/test/btree      # B-Tree tests
+./bin/test/dbutil     # Database utility tests
+./bin/test/db         # Database core tests
+./bin/test/record     # Record serialization tests
+./bin/test/journal    # Journaling tests
+./bin/test/maint      # Maintenance/compaction tests
+./bin/test/useradm    # User admin record tests
 ```
 
 ## Examples
@@ -299,7 +299,7 @@ user records in `USERS.DAT` with secondary indexes on username
 **Source:** `examples/useradm/`
 
 ```bash
-./bin/useradm
+./bin/examples/useradm
 ```
 
 **UserRecord fields:**
