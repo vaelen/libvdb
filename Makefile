@@ -8,8 +8,8 @@ CRC_SRC   = src/crc/crc.c
 SHA1_SRC  = src/crc/sha1.c
 BTREE_SRC = src/btree/btree.c
 DB_SRC    = src/db/dbutil.c src/db/db.c src/db/record.c src/db/journal.c src/db/maint.c
-USERADM_SRC = src/useradm/useradm.c src/useradm/user.c src/useradm/search.c
-USERADM_USER_SRC = src/useradm/user.c
+USERADM_SRC = examples/useradm/useradm.c examples/useradm/user.c examples/useradm/search.c
+USERADM_USER_SRC = examples/useradm/user.c
 
 all: test_test test_types test_string test_crc16 test_sha1 test_btree test_dbutil test_db test_record test_journal test_maint test_useradm useradm
 
@@ -95,15 +95,15 @@ test: test_test test_types test_string test_crc16 test_sha1 test_btree test_dbut
 
 test_useradm: $(BINDIR)/test_useradm
 
-$(BINDIR)/test_useradm: tests/useradm/user.c $(TEST_SRC) $(UTIL_SRC) $(CRC_SRC) $(SHA1_SRC) $(BTREE_SRC) $(DB_SRC) $(USERADM_USER_SRC) src/useradm/search.c include/useradm.h
+$(BINDIR)/test_useradm: examples/useradm/test.c $(TEST_SRC) $(UTIL_SRC) $(CRC_SRC) $(SHA1_SRC) $(BTREE_SRC) $(DB_SRC) $(USERADM_USER_SRC) examples/useradm/search.c examples/useradm/useradm.h
 	@mkdir -p $(BINDIR)
-	$(CC) $(CFLAGS) -o $(BINDIR)/test_useradm tests/useradm/user.c $(TEST_SRC) $(UTIL_SRC) $(CRC_SRC) $(SHA1_SRC) $(BTREE_SRC) $(DB_SRC) $(USERADM_USER_SRC) src/useradm/search.c
+	$(CC) $(CFLAGS) -Iexamples/useradm -o $(BINDIR)/test_useradm examples/useradm/test.c $(TEST_SRC) $(UTIL_SRC) $(CRC_SRC) $(SHA1_SRC) $(BTREE_SRC) $(DB_SRC) $(USERADM_USER_SRC) examples/useradm/search.c
 
 useradm: $(BINDIR)/useradm
 
-$(BINDIR)/useradm: $(USERADM_SRC) $(UTIL_SRC) $(CRC_SRC) $(SHA1_SRC) $(BTREE_SRC) $(DB_SRC) include/useradm.h
+$(BINDIR)/useradm: $(USERADM_SRC) $(UTIL_SRC) $(CRC_SRC) $(SHA1_SRC) $(BTREE_SRC) $(DB_SRC) examples/useradm/useradm.h
 	@mkdir -p $(BINDIR)
-	$(CC) $(CFLAGS) -o $(BINDIR)/useradm $(USERADM_SRC) $(UTIL_SRC) $(CRC_SRC) $(SHA1_SRC) $(BTREE_SRC) $(DB_SRC)
+	$(CC) $(CFLAGS) -Iexamples/useradm -o $(BINDIR)/useradm $(USERADM_SRC) $(UTIL_SRC) $(CRC_SRC) $(SHA1_SRC) $(BTREE_SRC) $(DB_SRC)
 
 clean:
 	rm -rf $(BINDIR)

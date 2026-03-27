@@ -8,9 +8,9 @@ Vaelen's Database (vDB) is a portable ANSI C (C89) database system targeting ret
 
 ## Build & Test
 
-No build system exists yet. When implemented, the convention is:
 ```bash
 make                    # build everything
+make test               # build and run all tests
 ./bin/test_<name>       # run a specific test suite (e.g., ./bin/test_btree)
 ```
 
@@ -21,8 +21,6 @@ Code must compile in **strict C89 mode** (e.g., `gcc -ansi -pedantic`).
 The system is built in layers, each depending only on layers below it:
 
 ```
-useradm          — CLI user database admin program (docs/useradm.md)
-   ↓
 db               — page-based database with journaling and indexing (docs/db.md)
    ↓
 btree            — file-based B-Tree for indexes (docs/btree.md)
@@ -34,7 +32,9 @@ util             — types (bool, uint16, int32, etc.), string helpers, ANSI C p
 test             — minimal unit testing framework
 ```
 
-Implementation order follows `docs/goals.md` (test framework → util → crc → btree → db → useradm).
+An example program (`useradm`) lives in `examples/useradm/`.
+
+Implementation order follows `docs/goals.md` (test framework → util → crc → btree → db).
 
 ## Coding Rules (docs/rules.md)
 
@@ -55,6 +55,7 @@ src/<lib>/<lib>.c      — library source (e.g., src/util/util.c)
 include/<lib>.h        — primary header (e.g., include/util.h)
 include/<lib>/*.h      — additional headers (e.g., include/util/strings.h)
 tests/<lib>/*.c        — test files (e.g., tests/util/strings.c)
+examples/<name>/       — example programs (e.g., examples/useradm/)
 docs/                  — specifications and design documents
 .claude/agents/        — Claude Code agent configurations (sw-eng, qa-eng)
 ```
